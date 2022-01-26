@@ -1,0 +1,46 @@
+CREATE MULTISET VOLATILE TABLE CompanyFeatures AS(
+        SEL
+        A.FNCL_YR, Cmptd_Txpyr_Sts, A.Prty_Id, B.Prty_Bsns_Ky as PAN, Full_Nm, Cmptd_Txpyr_Typ, Ntr_Of_Bsns_1,
+       
+       
+        CAST(Trnvr AS DECIMAL(18, 5)) AS TrnOvr, 
+        MIN(TrnOvr) OVER (PARTITION BY A.FNCL_YR) AS MIN_TrnOvr,
+        MAX(TrnOvr) OVER (PARTITION BY A.FNCL_YR) AS MAX_TrnOvr,
+       
+        (TrnOvr-MIN_TrnOvr)/(MAX_TrnOvr-MIN_TrnOvr) AS TrnOvr_Normalized,
+       
+       
+        CAST(GRSS_PRFT_MRGN AS DECIMAL(18, 5)) AS GP_Ratio, 
+        MIN(GP_Ratio) OVER (PARTITION BY A.FNCL_YR) AS MIN_GP_Ratio,
+        MAX(GP_Ratio) OVER (PARTITION BY A.FNCL_YR) AS MAX_GP_Ratio,
+       
+        (GP_Ratio-MIN_GP_Ratio)/(MAX_GP_Ratio-MIN_GP_Ratio) AS GP_Ratio_Normalized,
+       
+       
+        CAST(Bsns_Incm AS DECIMAL(18, 5)) AS Profit, 
+        MIN(Profit) OVER (PARTITION BY A.FNCL_YR) AS MIN_Profit,
+        MAX(Profit) OVER (PARTITION BY A.FNCL_YR) AS MAX_Profit,
+       
+        (Profit-MIN_Profit)/(MAX_Profit-MIN_Profit) AS Profit_Normalized,
+       
+       
+        Pncd_Ctgry,
+        CASE
+            WHEN Pncd_Ctgry = 'Rural'           THEN 1
+            WHEN Pncd_Ctgry = 'Urban'                THEN 2
+            WHEN Pncd_Ctgry = '30City'             THEN 3
+            WHEN Pncd_Ctgry = 'Mixed'            THEN 4
+            WHEN Pncd_Ctgry = 'NA'                   THEN NULL
+            ELSE NULL
+        END AS Geography
+       
+        FROM ( SEL * FROM  PRRT_ATTRIB WHERE Cmptd_Txpyr_Sts='Company' AND FNCL_YR IN (2017, 2018) ) A
+        LEFT JOIN PRTY.PRTY B
+        ON (A.Prty_Id = B.Prty_Id)
+        LEFT JOIN ( SEL * FROM FIN_RATIOS WHERE FNCL_YR IN (2017, 2018) ) C
+        ON (B.Prty_Bsns_Ky = C.ID AND A.FNCL_YR = C.FNCL_YR)
+        LEFT JOIN PRTY.ID_MSTR D
+        ON (B.Prty_Bsns_Ky = D.ID)
+)WITH DATA
+PRIMARY INDEX (ID)
+ON COMMIT PRESERVE ROWS;

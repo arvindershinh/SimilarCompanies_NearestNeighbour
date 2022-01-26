@@ -1,0 +1,113 @@
+
+REPLACE PROCEDURE anlytc_db.SP_CompanySymmetryDistance (IN FNCL_YR INTEGER, IN Cmpny_Pan VARCHAR(20) CHARACTER SET LATIN NOT CASESPECIFIC, IN K INTEGER)
+DYNAMIC RESULT SETS 1
+BEGIN
+
+--********************************************************* INITIALIZATION ***********************************************
+
+		DECLARE SqlQuery1 varchar(10000);
+		DECLARE SqlQuery2 varchar(10000);
+		
+		DECLARE W1 DECIMAL(18,2);
+		DECLARE W2 DECIMAL(18,2);
+		DECLARE W3 DECIMAL(18,2);
+		DECLARE W4 DECIMAL(18,2);
+		
+		DECLARE rslt CURSOR WITH RETURN ONLY FOR sttmnt;
+	  	
+	
+--***************************************************************************************************************************
+			
+			SET W1 = 0.4;
+			SET W2 = 0.4;
+			SET W3 = 0.1;
+			SET W4 = 0.1;
+			
+			SET SqlQuery1 = ' (SEL * FROM CompanyFeatures WHERE FNCL_YR = ' || FNCL_YR || ') B ';
+			
+			SET SqlQuery2 = 
+			'SEL 
+			A.FNCL_YR,
+			A.PAN AS COMPANY_PAN_0,
+			A.Full_Nm AS Full_Nm_0,
+			A.Cmptd_Txpyr_Typ AS Cmptd_Txpyr_Typ_0,
+			A.Ntr_Of_Bsns_1 AS Ntr_Of_Bsns_1_0,
+			A.JURISDICTION AS JURISDICTION_0,
+
+			B.PAN AS COMPANY_PAN_1,
+			B.Full_Nm AS Full_Nm_1,
+			B.Cmptd_Txpyr_Typ AS Cmptd_Txpyr_Typ_1,
+			B.Ntr_Of_Bsns_1 AS Ntr_Of_Bsns_1_1,
+			B.JURISDICTION AS JURISDICTION_1,
+			
+			A.TrnOvr/10000000  AS TrnOvr_InCrore_0,
+			B.TrnOvr/10000000  AS TrnOvr_InCrore_1,
+			
+			A.GP_Ratio AS GP_Ratio_0,
+			B.GP_Ratio AS GP_Ratio_1,
+			
+			A.Profit/10000000 AS Profit_InCrore_0,
+			B.Profit/10000000 AS Profit_InCrore_1,
+			
+			A.Pncd_Ctgry AS Pncd_Ctgry_0,
+			B.Pncd_Ctgry AS Pncd_Ctgry_1,
+			
+			
+			A.TrnOvr_Normalized AS TrnOvr_Normalized_0,
+			B.TrnOvr_Normalized AS TrnOvr_Normalized_1,
+			
+			A.GP_Ratio_Normalized AS GP_Ratio_Normalized_0,
+			B.GP_Ratio_Normalized AS GP_Ratio_Normalized_1,
+			
+			A.Profit_Normalized AS Profit_Normalized_0,
+			B.Profit_Normalized AS Profit_Normalized_1,
+			
+			A.Geography AS Geography_0,
+			B.Geography AS Geography_1,
+			
+			
+			(CASE 
+				WHEN (A.TrnOvr_Normalized IS NULL) THEN 0 
+				ELSE (A.TrnOvr_Normalized-B.TrnOvr_Normalized) 
+			END) 
+			AS TrnOvr_Relative,
+			
+			(CASE 
+				WHEN (A.GP_Ratio_Normalized IS NULL) THEN 0 
+				ELSE (A.GP_Ratio_Normalized-B.GP_Ratio_Normalized) 
+			END) 
+			AS GP_Ratio_Relative,
+			
+			(CASE 
+				WHEN (A.Profit_Normalized IS NULL) THEN 0 
+				ELSE (A.Profit_Normalized-B.Profit_Normalized) 
+			END) 
+			AS Profit_Relative,
+			
+			(CASE 
+				WHEN (A.Geography IS NULL) THEN 0 
+				WHEN (A.Geography=B.Geography) THEN 0 
+				ELSE 1 
+			END) 
+			AS Geography_Relative,
+			
+			CAST(SQRT
+			(
+			TrnOvr_Relative*TrnOvr_Relative*'||W1||'*'||W1||'+
+			GP_Ratio_Relative*GP_Ratio_Relative*'||W2||'*'||W2||'+
+			Profit_Relative*Profit_Relative*'||W3||'*'||W3||'+
+			Geography_Relative*Geography_Relative*'||W4||'*'||W4||'
+			) AS DECIMAL(18,5)) AS DISTANCE
+			
+			FROM 
+			(SEL * FROM' || SqlQuery1 || 'WHERE PAN = '|| '''' || Cmpny_Pan || '''' ||') A
+			INNER JOIN' || SqlQuery1 ||
+			'ON ( (COMPANY_PAN_0 <> COMPANY_PAN_1) /*AND (Cmptd_Txpyr_Typ_0 = Cmptd_Txpyr_Typ_1)*/ AND (Ntr_Of_Bsns_1_0 = Ntr_Of_Bsns_1_1) )
+			WHERE DISTANCE IS NOT NULL
+			QUALIFY ROW_NUMBER() OVER (ORDER BY DISTANCE) <=' || K
+			;
+			
+			PREPARE sttmnt FROM SqlQuery2;
+			OPEN rslt;
+
+END;
