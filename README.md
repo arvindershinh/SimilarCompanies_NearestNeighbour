@@ -1,2 +1,4 @@
 # SimilarCompanies_NearestNeighbour
- To find similar companies by using nearest neighbors’ approach.
+Objective - To find similar companies using nearest neighbors' approach.
+Activities - Engineered nearest neighbour algorithm in Teradata (SQL). This was involved
+feature engineering, data normalization, Weighted Euclidian distance calculation, etc.
