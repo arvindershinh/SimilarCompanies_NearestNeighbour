@@ -7,6 +7,6 @@
 **Activities** - 
 + Engineered nearest neighbour algorithm in Teradata (SQL). 
 + This was involved
-++ feature engineering, data normalization, Weighted Euclidian distance calculation, etc.
+  - feature engineering, data normalization, Weighted Euclidian distance calculation, etc.
 
 **Technology Stack** - SQL, Stored Procedure
